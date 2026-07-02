@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Placerville World Cup Pool</title>
+  <style>
+    :root{
+      --paper:#f6f0e4; --ink:#24211c; --muted:#6f675b; --line:#cdbf9d;
+      --gold:#b58b2b; --green:#183d2f; --card:#fffaf0; --dead:#b8b0a4;
+      --live:#b7332a; --shadow:0 10px 24px rgba(36,33,28,.12);
+    }
+    *{box-sizing:border-box} body{margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Arial, sans-serif;background:radial-gradient(circle at top left, rgba(181,139,43,.18), transparent 32rem),var(--paper);color:var(--ink)}
+    header{position:sticky;top:0;z-index:10;background:rgba(246,240,228,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:14px 18px}
+    .top{display:flex;gap:16px;align-items:flex-end;justify-content:space-between;max-width:1800px;margin:auto}.brand h1{font-family:Georgia,serif;letter-spacing:.04em;margin:0;font-size:clamp(22px,3vw,36px)}.brand p{margin:2px 0 0;color:var(--muted);font-size:13px}.updated{font-size:12px;color:var(--muted);text-align:right}.standings{display:flex;gap:8px;overflow:auto;padding-top:10px;max-width:1800px;margin:auto}.pill{white-space:nowrap;border:1px solid var(--line);background:rgba(255,250,240,.75);border-radius:999px;padding:7px 10px;font-size:13px;cursor:pointer}.pill.active{background:var(--green);color:white;border-color:var(--green)}.pill b{color:var(--gold)}.pill.active b{color:white}
+    main{max-width:1900px;margin:0 auto;padding:18px}.hint{font-size:13px;color:var(--muted);margin:0 0 14px}.bracket-wrap{overflow:auto;border:1px solid var(--line);border-radius:22px;background:rgba(255,250,240,.45);box-shadow:var(--shadow)}
+    .bracket{position:relative;display:grid;grid-template-columns:repeat(5, 260px);column-gap:72px;min-width:1600px;padding:24px 34px 34px}.round{display:grid;align-content:start;gap:14px}.round h2{position:sticky;top:94px;z-index:2;margin:0 0 6px;font-size:12px;letter-spacing:.14em;color:var(--green);background:rgba(246,240,228,.9);padding:4px 0}.r16{padding-top:52px;gap:80px}.qf{padding-top:154px;gap:236px}.sf{padding-top:362px;gap:548px}.final{padding-top:674px}.match{position:relative;width:260px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 14px rgba(36,33,28,.08);overflow:hidden}.match.finaled{border-left:4px solid var(--gold)}.match.live{border-left:4px solid var(--live)}.meta{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid rgba(205,191,157,.7)}.status.live-dot{color:var(--live);font-weight:800}.team{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 10px;border-bottom:1px solid rgba(205,191,157,.45)}.team:last-child{border-bottom:0}.name{font-weight:750;font-size:14px}.owner{font-size:11px;color:var(--muted);margin-top:2px}.score{font-size:18px;font-weight:850;min-width:24px;text-align:right}.winner .name{color:var(--green)}.winner{background:linear-gradient(90deg, rgba(181,139,43,.13), transparent)}.loser{opacity:.48}.tbd .name,.tbd .owner{color:#999}.highlight{outline:3px solid rgba(181,139,43,.55);outline-offset:2px}.dim{opacity:.25}
+    svg.connectors{position:absolute;inset:0;pointer-events:none}.connector{stroke:var(--line);stroke-width:2;fill:none}.connector.win{stroke:var(--gold);stroke-width:3}.controls{display:flex;gap:10px;align-items:center;margin:0 0 12px}.search{width:min(320px,100%);padding:11px 13px;border:1px solid var(--line);border-radius:999px;background:var(--card);font-size:14px}.note{font-size:12px;color:var(--muted)}
+    @media(max-width:800px){.top{align-items:flex-start;flex-direction:column}.updated{text-align:left}.bracket{grid-template-columns:repeat(5, 238px);column-gap:52px;min-width:1400px;padding:18px}.match{width:238px}.brand h1{font-size:23px}main{padding:10px}.round h2{top:125px}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="top"><div class="brand"><h1>Placerville World Cup Pool</h1><p>Sierra Foothills bracket challenge</p></div><div class="updated" id="updated">Loading scores…</div></div>
+  <div class="standings" id="standings"></div>
+</header>
+<main>
+  <div class="controls"><input class="search" id="search" placeholder="Search owner or team…"/><span class="note">Click a person above to highlight their teams.</span></div>
+  <p class="hint">Bracket scrolls horizontally on phones. Winners feed forward automatically from completed matches.</p>
+  <div class="bracket-wrap"><div class="bracket" id="bracket"><svg class="connectors" id="connectors"></svg></div></div>
+</main>
+<script>
+const owners={
+ Tyler:['Mexico','Morocco','Congo DR'], Ricky:['Switzerland','Cape Verde'], Ryan:['Brazil','Canada'], Emmett:['USA','Norway','Bosnia and Herzegovina'], Zach:['Germany','Australia'], Forrest:['Netherlands','South Africa','Sweden'], Dillon:['Belgium','Austria','Ecuador'], Mike:['Spain','Croatia','Senegal'], Wade:['France','Ivory Coast'], Nolan:['Argentina','Portugal','Ghana'], Justine:['Colombia','Japan','Paraguay'], Kevin:['England','Egypt','Algeria']
+};
+const flags={Mexico:'🇲🇽',Morocco:'🇲🇦','Congo DR':'🇨🇩',Switzerland:'🇨🇭','Cape Verde':'🇨🇻',Brazil:'🇧🇷',Canada:'🇨🇦',USA:'🇺🇸',Norway:'🇳🇴','Bosnia and Herzegovina':'🇧🇦',Germany:'🇩🇪',Australia:'🇦🇺',Netherlands:'🇳🇱','South Africa':'🇿🇦',Sweden:'🇸🇪',Belgium:'🇧🇪',Austria:'🇦🇹',Ecuador:'🇪🇨',Spain:'🇪🇸',Croatia:'🇭🇷',Senegal:'🇸🇳',France:'🇫🇷','Ivory Coast':'🇨🇮',Argentina:'🇦🇷',Portugal:'🇵🇹',Ghana:'🇬🇭',Colombia:'🇨🇴',Japan:'🇯🇵',Paraguay:'🇵🇾',England:'🏴',Egypt:'🇪🇬',Algeria:'🇩🇿'};
+const teamOwner={}; Object.entries(owners).forEach(([o,ts])=>ts.forEach(t=>teamOwner[t]=o));
+const seedMatches=[
+ {id:'m73',round:'r32',label:'R32',teams:['South Africa','Canada'],next:'m90'},
+ {id:'m75',round:'r32',label:'R32',teams:['Netherlands','Morocco'],next:'m90'},
+ {id:'m74',round:'r32',label:'R32',teams:['Germany','Paraguay'],next:'m89'},
+ {id:'m77',round:'r32',label:'R32',teams:['France','Sweden'],next:'m89'},
+ {id:'m83',round:'r32',label:'R32',teams:['Portugal','Croatia'],next:'m93'},
+ {id:'m84',round:'r32',label:'R32',teams:['Spain','Austria'],next:'m93'},
+ {id:'m81',round:'r32',label:'R32',teams:['USA','Bosnia and Herzegovina'],next:'m94'},
+ {id:'m82',round:'r32',label:'R32',teams:['Belgium','Senegal'],next:'m94'},
+ {id:'m76',round:'r32',label:'R32',teams:['Brazil','Japan'],next:'m91'},
+ {id:'m78',round:'r32',label:'R32',teams:['Ivory Coast','Norway'],next:'m91'},
+ {id:'m79',round:'r32',label:'R32',teams:['Mexico','Ecuador'],next:'m92'},
+ {id:'m80',round:'r32',label:'R32',teams:['England','Congo DR'],next:'m92'},
+ {id:'m86',round:'r32',label:'R32',teams:['Argentina','Cape Verde'],next:'m95'},
+ {id:'m88',round:'r32',label:'R32',teams:['Australia','Egypt'],next:'m95'},
+ {id:'m85',round:'r32',label:'R32',teams:['Switzerland','Algeria'],next:'m96'},
+ {id:'m87',round:'r32',label:'R32',teams:['Colombia','Ghana'],next:'m96'},
+ {id:'m90',round:'r16',label:'R16',from:['m73','m75'],next:'m97'}, {id:'m89',round:'r16',label:'R16',from:['m74','m77'],next:'m97'},
+ {id:'m93',round:'r16',label:'R16',from:['m83','m84'],next:'m98'}, {id:'m94',round:'r16',label:'R16',from:['m81','m82'],next:'m98'},
+ {id:'m91',round:'r16',label:'R16',from:['m76','m78'],next:'m99'}, {id:'m92',round:'r16',label:'R16',from:['m79','m80'],next:'m99'},
+ {id:'m95',round:'r16',label:'R16',from:['m86','m88'],next:'m100'}, {id:'m96',round:'r16',label:'R16',from:['m85','m87'],next:'m100'},
+ {id:'m97',round:'qf',label:'QF',from:['m90','m89'],next:'m101'}, {id:'m98',round:'qf',label:'QF',from:['m93','m94'],next:'m101'},
+ {id:'m99',round:'qf',label:'QF',from:['m91','m92'],next:'m102'}, {id:'m100',round:'qf',label:'QF',from:['m95','m96'],next:'m102'},
+ {id:'m101',round:'sf',label:'SF',from:['m97','m98'],next:'m104'}, {id:'m102',round:'sf',label:'SF',from:['m99','m100'],next:'m104'},
+ {id:'m104',round:'final',label:'FINAL',from:['m101','m102']}
+];
+const roundNames={r32:'ROUND OF 32',r16:'ROUND OF 16',qf:'QUARTERFINALS',sf:'SEMIFINALS',final:'FINAL'};
+let matches={}, selected='';
+function norm(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+const aliases={'unitedstates':'usa','usmnt':'usa','congodr':'congodr','drcongo':'congodr','côtedivoire':'ivorycoast','cotedivoire':'ivorycoast','korearepublic':'southkorea'};
+function same(a,b){let x=aliases[norm(a)]||norm(a), y=aliases[norm(b)]||norm(b); return x===y}
+function ownerOf(t){return teamOwner[t]||''}
+function init(){matches={}; seedMatches.forEach(m=>matches[m.id]={...m,teams:m.teams?[...m.teams]:['TBD','TBD'],scores:[null,null],status:'scheduled',winner:null}); applyKnownResults(); render(); fetchScores(); setInterval(fetchScores,60000)}
+function applyKnownResults(){[
+ ['m73',[0,1],'Canada'],['m75',[1,1],'Morocco'],['m74',[1,1],'Paraguay'],['m77',[3,0],'France'],['m76',[2,1],'Brazil'],['m78',[1,2],'Norway'],['m79',[2,0],'Mexico'],['m80',[2,1],'England'],['m81',[2,0],'USA'],['m82',[3,2],'Belgium'],['m84',[3,0],'Spain']
+].forEach(([id,s,w])=>{Object.assign(matches[id],{scores:s,winner:w,status:'final'});}); advanceAll();}
+function advanceAll(){for(let i=0;i<5;i++){seedMatches.forEach(m=>{if(!m.from)return; const a=matches[m.from[0]]?.winner||'TBD', b=matches[m.from[1]]?.winner||'TBD'; matches[m.id].teams=[a,b];});}}
+async function fetchScores(){try{const r=await fetch('/api/scores',{cache:'no-store'}); if(!r.ok)throw new Error('api'); const data=await r.json(); mergeScores(data.games||[]); document.getElementById('updated').textContent='Last updated '+new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});}catch(e){document.getElementById('updated').textContent='Using embedded results • ESPN feed unavailable';} render();}
+function mergeScores(games){games.forEach(g=>{const id=findMatch(g.home,g.away); if(!id)return; const m=matches[id]; m.scores=[Number(g.homeScore),Number(g.awayScore)]; m.status=g.status||m.status; if(g.winner) m.winner=canonical(g.winner,m.teams)||g.winner;}); advanceAll();}
+function findMatch(a,b){return Object.values(matches).find(m=>m.teams && ((same(m.teams[0],a)&&same(m.teams[1],b))||(same(m.teams[0],b)&&same(m.teams[1],a))))?.id}
+function canonical(t,teams){return teams.find(x=>same(x,t))||t}
+function aliveTeams(){const losers=new Set(); Object.values(matches).forEach(m=>{if(m.winner&&m.teams){m.teams.forEach(t=>{if(t!=='TBD'&&!same(t,m.winner))losers.add(t)})}}); return Object.values(owners).flat().filter(t=>!losers.has(t));}
+function standings(){const alive=aliveTeams(); return Object.keys(owners).map(o=>({owner:o, alive:owners[o].filter(t=>alive.includes(t)), total:owners[o].length})).sort((a,b)=>b.alive.length-a.alive.length||a.owner.localeCompare(b.owner));}
+function render(){const root=document.getElementById('bracket'); root.innerHTML='<svg class="connectors" id="connectors"></svg>'; ['r32','r16','qf','sf','final'].forEach(r=>{const col=document.createElement('section'); col.className='round '+r; col.innerHTML='<h2>'+roundNames[r]+'</h2>'; seedMatches.filter(m=>m.round===r).forEach(m=>col.appendChild(matchEl(matches[m.id]))); root.appendChild(col)}); renderStandings(); setTimeout(drawLines,30); applyHighlight();}
+function matchEl(m){const el=document.createElement('article'); el.className='match '+(m.status==='final'?'finaled ':'')+(m.status==='live'?'live ':''); el.id='card-'+m.id; el.innerHTML='<div class="meta"><span>'+m.label+'</span><span class="status '+(m.status==='live'?'live-dot':'')+'">'+(m.status==='live'?'● LIVE':m.status==='final'?'FINAL':'UPCOMING')+'</span></div>'+m.teams.map((t,i)=>teamRow(t,m.scores[i],m.winner)).join(''); return el}
+function teamRow(t,score,winner){let cls='team '+(t==='TBD'?'tbd ':'')+(winner&&same(t,winner)?'winner ':winner&&t!=='TBD'?'loser ':'');return '<div class="'+cls+'" data-team="'+t+'" data-owner="'+ownerOf(t)+'"><div><div class="name">'+(flags[t]||'')+' '+t+'</div><div class="owner">'+(ownerOf(t)||'')+'</div></div><div class="score">'+(score==null?'':score)+'</div></div>'}
+function renderStandings(){document.getElementById('standings').innerHTML=standings().map((s,i)=>'<button class="pill '+(selected===s.owner?'active':'')+'" onclick="selectOwner(\''+s.owner+'\')">'+(i===0?'🏆 ':'')+s.owner+' <b>'+s.alive.length+'</b> <span>'+s.alive.map(t=>flags[t]||'').join('')+'</span></button>').join('')}
+function drawLines(){const svg=document.getElementById('connectors'), root=document.getElementById('bracket'); svg.setAttribute('width',root.scrollWidth); svg.setAttribute('height',root.scrollHeight); svg.innerHTML=''; seedMatches.filter(m=>m.next).forEach(m=>{const a=document.getElementById('card-'+m.id), b=document.getElementById('card-'+m.next); if(!a||!b)return; const ar=a.getBoundingClientRect(), br=b.getBoundingClientRect(), rr=root.getBoundingClientRect(); const x1=ar.right-rr.left, y1=ar.top+ar.height/2-rr.top, x2=br.left-rr.left, y2=br.top+br.height/2-rr.top, mid=(x1+x2)/2; const win=matches[m.id].winner?' win':''; const p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',`M ${x1} ${y1} H ${mid} V ${y2} H ${x2}`); p.setAttribute('class','connector'+win); svg.appendChild(p);});}
+function selectOwner(o){selected=selected===o?'':o; applyHighlight(); renderStandings();}
+function applyHighlight(){const q=(document.getElementById('search')?.value||'').trim().toLowerCase(); document.querySelectorAll('.team').forEach(el=>{const t=el.dataset.team||'', o=el.dataset.owner||''; const hit=(selected&&o===selected)||(q&&(t.toLowerCase().includes(q)||o.toLowerCase().includes(q))); el.classList.toggle('highlight',!!hit); el.closest('.match').classList.toggle('dim',(selected||q)&&!hit&&!el.closest('.match').querySelector('.highlight'));});}
+document.getElementById('search').addEventListener('input',()=>{selected=''; renderStandings(); applyHighlight();}); window.addEventListener('resize',drawLines); init();
+</script>
+</body>
+</html>
